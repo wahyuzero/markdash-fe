@@ -1,0 +1,191 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family:
+        "Inter",
+        system-ui,
+        -apple-system,
+        sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: #475569;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* Markdown Preview Styles */
+.markdown-preview {
+    line-height: 1.7;
+}
+
+.markdown-preview h1 {
+    @apply text-3xl font-bold mt-6 mb-4 pb-2 border-b-2 border-gray-200;
+}
+
+.markdown-preview h2 {
+    @apply text-2xl font-bold mt-5 mb-3 pb-2 border-b border-gray-200;
+}
+
+.markdown-preview h3 {
+    @apply text-xl font-semibold mt-4 mb-2;
+}
+
+.markdown-preview h4 {
+    @apply text-lg font-semibold mt-3 mb-2;
+}
+
+.markdown-preview h5 {
+    @apply text-base font-semibold mt-2 mb-1;
+}
+
+.markdown-preview h6 {
+    @apply text-sm font-semibold mt-2 mb-1;
+}
+
+.markdown-preview p {
+    @apply mb-4;
+}
+
+.markdown-preview ul {
+    @apply list-disc list-inside mb-4 pl-4;
+}
+
+.markdown-preview ol {
+    @apply list-decimal list-inside mb-4 pl-4;
+}
+
+.markdown-preview li {
+    @apply mb-1;
+}
+
+.markdown-preview a {
+    @apply text-blue-600 hover:text-blue-800 underline;
+}
+
+.markdown-preview blockquote {
+    @apply border-l-4 border-gray-300 pl-4 py-2 mb-4 italic bg-gray-50;
+}
+
+.markdown-preview code {
+    @apply bg-gray-100 text-red-600 px-1.5 py-0.5 rounded text-sm font-mono;
+}
+
+.markdown-preview pre {
+    @apply bg-gray-900 text-gray-100 p-4 rounded-lg mb-4 overflow-x-auto;
+}
+
+.markdown-preview pre code {
+    @apply bg-transparent text-gray-100 p-0;
+}
+
+.markdown-preview table {
+    @apply w-full border-collapse mb-4;
+}
+
+.markdown-preview th {
+    @apply bg-gray-100 border border-gray-300 px-4 py-2 font-semibold text-left;
+}
+
+.markdown-preview td {
+    @apply border border-gray-300 px-4 py-2;
+}
+
+.markdown-preview img {
+    @apply max-w-full h-auto rounded-lg shadow-md my-4;
+}
+
+.markdown-preview hr {
+    @apply my-6 border-t-2 border-gray-300;
+}
+
+/* Dark mode markdown styles */
+.dark .markdown-preview h1,
+.dark .markdown-preview h2 {
+    @apply border-gray-700;
+}
+
+.dark .markdown-preview a {
+    @apply text-blue-400 hover:text-blue-300;
+}
+
+.dark .markdown-preview blockquote {
+    @apply border-gray-600 bg-slate-800 text-gray-300;
+}
+
+.dark .markdown-preview code {
+    @apply bg-slate-700 text-pink-400;
+}
+
+.dark .markdown-preview th {
+    @apply bg-slate-700 border-slate-600 text-gray-200;
+}
+
+.dark .markdown-preview td {
+    @apply border-slate-600 text-gray-300;
+}
+
+.dark .markdown-preview hr {
+    @apply border-gray-700;
+}
+
+/* MD Editor Custom Styles */
+.w-md-editor {
+    @apply shadow-lg rounded-lg overflow-hidden;
+}
+
+.w-md-editor-toolbar {
+    @apply bg-white border-b border-gray-200;
+}
+
+.dark .w-md-editor {
+    @apply bg-slate-800;
+}
+
+.dark .w-md-editor-toolbar {
+    @apply bg-slate-700 border-slate-600;
+}
+
+.dark .w-md-editor-content {
+    @apply bg-slate-800 text-white;
+}
+
+.dark .w-md-editor-preview {
+    @apply bg-slate-800 text-gray-200;
+}

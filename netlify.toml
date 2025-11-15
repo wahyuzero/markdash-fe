@@ -1,0 +1,28 @@
+# Netlify Configuration
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# API Proxy - Sembunyikan backend URL
+[[redirects]]
+  from = "/api/*"
+  to = "https://markdash-be.wahyuzero.deno.net/api/:splat"
+  status = 200
+  force = true
+  headers = {X-From = "Netlify"}
+
+# CORS Headers untuk API
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+    Access-Control-Allow-Credentials = "true"
+
+# SPA Fallback - untuk React Router
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
