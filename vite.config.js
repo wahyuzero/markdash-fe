@@ -9,7 +9,7 @@ export default defineConfig({
     open: true,
     proxy: {
       "/api": {
-        target: "https://markdash-be.wahyuzero.deno.net/",
+        target: "https://markdash-be.wahyuzero.deno.net",
         changeOrigin: true,
         secure: true,
         rewrite: (path) => path,
