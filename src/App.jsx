@@ -11,15 +11,27 @@ import MDEditor from '@uiw/react-md-editor';
 // Gunakan relative path untuk proxy, atau fallback ke env variable
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
+// API Response Time Tracker
+let lastApiResponseTime = null;
+let lastApiCallTime = null;
+
+const updateApiTiming = (startTime) => {
+  const endTime = Date.now();
+  lastApiResponseTime = endTime - startTime;
+  lastApiCallTime = new Date();
+};
+
 // ==================== API Functions ====================
 const api = {
   async login(username, password) {
+    const startTime = Date.now();
     const res = await fetch(`${API_BASE_URL}/api/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
     });
     const data = await res.json();
+    updateApiTiming(startTime);
     if (data.success) {
       localStorage.setItem('token', data.data.token);
       localStorage.setItem('user', JSON.stringify(data.data.user));
@@ -28,12 +40,15 @@ const api = {
   },
 
   async register(username, password) {
+    const startTime = Date.now();
     const res = await fetch(`${API_BASE_URL}/api/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
     });
-    return res.json();
+    const data = await res.json();
+    updateApiTiming(startTime);
+    return data;
   },
 
   logout() {
@@ -55,13 +70,17 @@ const api = {
   },
 
   async getBoards() {
+    const startTime = Date.now();
     const res = await fetch(`${API_BASE_URL}/api/boards`, {
       headers: { 'Authorization': `Bearer ${this.getToken()}` }
     });
-    return res.json();
+    const data = await res.json();
+    updateApiTiming(startTime);
+    return data;
   },
 
   async createBoard(board) {
+    const startTime = Date.now();
     const res = await fetch(`${API_BASE_URL}/api/boards`, {
       method: 'POST',
       headers: {
@@ -70,10 +89,13 @@ const api = {
       },
       body: JSON.stringify(board)
     });
-    return res.json();
+    const data = await res.json();
+    updateApiTiming(startTime);
+    return data;
   },
 
   async updateBoard(id, board) {
+    const startTime = Date.now();
     const res = await fetch(`${API_BASE_URL}/api/boards/${id}`, {
       method: 'PUT',
       headers: {
@@ -82,25 +104,34 @@ const api = {
       },
       body: JSON.stringify(board)
     });
-    return res.json();
+    const data = await res.json();
+    updateApiTiming(startTime);
+    return data;
   },
 
   async deleteBoard(id) {
+    const startTime = Date.now();
     const res = await fetch(`${API_BASE_URL}/api/boards/${id}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${this.getToken()}` }
     });
-    return res.json();
+    const data = await res.json();
+    updateApiTiming(startTime);
+    return data;
   },
 
   async getBoard(id) {
+    const startTime = Date.now();
     const res = await fetch(`${API_BASE_URL}/api/boards/${id}`, {
       headers: { 'Authorization': `Bearer ${this.getToken()}` }
     });
-    return res.json();
+    const data = await res.json();
+    updateApiTiming(startTime);
+    return data;
   },
 
   async createLog(boardId, actions) {
+    const startTime = Date.now();
     const res = await fetch(`${API_BASE_URL}/api/logs`, {
       method: 'POST',
       headers: {
@@ -109,29 +140,48 @@ const api = {
       },
       body: JSON.stringify({ boardId, actions })
     });
-    return res.json();
+    const data = await res.json();
+    updateApiTiming(startTime);
+    return data;
   },
 
   async getBoardLogs(boardId) {
+    const startTime = Date.now();
     const res = await fetch(`${API_BASE_URL}/api/logs/${boardId}`, {
       headers: { 'Authorization': `Bearer ${this.getToken()}` }
     });
-    return res.json();
+    const data = await res.json();
+    updateApiTiming(startTime);
+    return data;
   },
 
   async getNotifications(boardId) {
+    const startTime = Date.now();
     const res = await fetch(`${API_BASE_URL}/api/notify/${boardId}`, {
       headers: { 'Authorization': `Bearer ${this.getToken()}` }
     });
-    return res.json();
+    const data = await res.json();
+    updateApiTiming(startTime);
+    return data;
   },
 
   async dismissNotification(id) {
+    const startTime = Date.now();
     const res = await fetch(`${API_BASE_URL}/api/notify/${id}/dismiss`, {
       method: 'PATCH',
       headers: { 'Authorization': `Bearer ${this.getToken()}` }
     });
-    return res.json();
+    const data = await res.json();
+    updateApiTiming(startTime);
+    return data;
+  },
+
+  getLastResponseTime() {
+    return lastApiResponseTime;
+  },
+
+  getLastCallTime() {
+    return lastApiCallTime;
   }
 };
 
@@ -198,6 +248,117 @@ const parseMarkdown = (markdown) => {
 };
 
 // ==================== Components ====================
+const Footer = ({ darkMode }) => {
+  const [apiStatus, setApiStatus] = useState({ time: null, responseTime: null });
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setApiStatus({
+        time: api.getLastCallTime(),
+                   responseTime: api.getLastResponseTime()
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const getTimeAgo = (date) => {
+    if (!date) return 'Never';
+    const seconds = Math.floor((new Date() - date) / 1000);
+
+    if (seconds < 60) return `${seconds}s ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  };
+
+  const getStatusColor = () => {
+    if (!apiStatus.responseTime) return darkMode ? 'text-gray-500' : 'text-gray-400';
+    if (apiStatus.responseTime < 200) return 'text-green-500';
+    if (apiStatus.responseTime < 500) return 'text-yellow-500';
+    return 'text-red-500';
+  };
+
+  return (
+    <footer className={`${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'} border-t mt-auto`}>
+    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="grid md:grid-cols-3 gap-6">
+    {/* Tech Stack */}
+    <div>
+    <h3 className={`text-sm font-semibold mb-3 ${darkMode ? 'text-white' : 'text-slate-800'}`}>Tech Stack</h3>
+    <div className="space-y-2 text-xs">
+    <div className="flex items-center space-x-2">
+    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+    <span className={darkMode ? 'text-gray-400' : 'text-slate-600'}>React 18 + Vite</span>
+    </div>
+    <div className="flex items-center space-x-2">
+    <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
+    <span className={darkMode ? 'text-gray-400' : 'text-slate-600'}>Tailwind CSS</span>
+    </div>
+    <div className="flex items-center space-x-2">
+    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+    <span className={darkMode ? 'text-gray-400' : 'text-slate-600'}>React Markdown + KaTeX</span>
+    </div>
+    <div className="flex items-center space-x-2">
+    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+    <span className={darkMode ? 'text-gray-400' : 'text-slate-600'}>Deno Deploy (Backend)</span>
+    </div>
+    </div>
+    </div>
+
+    {/* API Status */}
+    <div>
+    <h3 className={`text-sm font-semibold mb-3 ${darkMode ? 'text-white' : 'text-slate-800'}`}>API Status</h3>
+    <div className="space-y-2 text-xs">
+    <div className="flex items-center space-x-2">
+    <div className={`w-2 h-2 ${getStatusColor()} rounded-full animate-pulse`}></div>
+    <span className={darkMode ? 'text-gray-400' : 'text-slate-600'}>
+    {apiStatus.responseTime ? `${apiStatus.responseTime}ms` : 'Waiting...'}
+    </span>
+    </div>
+    <div className={`${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>
+    Last call: {getTimeAgo(apiStatus.time)}
+    </div>
+    <div className="flex items-center space-x-1">
+    <span className={darkMode ? 'text-gray-400' : 'text-slate-600'}>Status:</span>
+    <span className={apiStatus.responseTime ? 'text-green-500' : 'text-gray-500'}>
+    {apiStatus.responseTime ? '● Online' : '○ Idle'}
+    </span>
+    </div>
+    </div>
+    </div>
+
+    {/* Info */}
+    <div>
+    <h3 className={`text-sm font-semibold mb-3 ${darkMode ? 'text-white' : 'text-slate-800'}`}>MarkDash</h3>
+    <p className={`text-xs mb-2 ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>
+    Interactive Markdown Dashboard with auto-reset checklists and activity logging.
+    </p>
+    <div className="flex items-center space-x-3 text-xs">
+    <a href="https://github.com" className={`${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'} transition`}>
+    GitHub
+    </a>
+    <span className={darkMode ? 'text-gray-600' : 'text-gray-400'}>•</span>
+    <a href="https://frugaldev.biz.id" className={`${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'} transition`}>
+    Dev
+    </a>
+    <span className={darkMode ? 'text-gray-600' : 'text-gray-400'}>•</span>
+    <span className={darkMode ? 'text-gray-500' : 'text-gray-400'}>v1.0.0</span>
+    </div>
+    </div>
+    </div>
+
+    <div className={`mt-6 pt-4 border-t ${darkMode ? 'border-slate-700' : 'border-gray-200'} text-center text-xs ${darkMode ? 'text-gray-500' : 'text-slate-500'}`}>
+    © 2025 MarkDash. Using React + Vite
+    </div>
+    </div>
+    </footer>
+  );
+};
+
 const Navbar = ({ user, onLogout, darkMode, toggleDarkMode }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -264,7 +425,7 @@ const HomePage = ({ onNavigate }) => {
     <FileText className="w-20 h-20 text-blue-500" />
     </div>
     <h1 className="text-5xl font-bold text-slate-800 mb-4">MarkDash</h1>
-    <p className="text-xl text-slate-600 mb-8">Your daily markdown dashboard</p>
+    <p className="text-xl text-slate-600 mb-8">Your daily markdown with checklists, proudly optimized for devices that wheeze when opening Chrome.</p>
     <div className="flex justify-center space-x-4">
     <button onClick={() => onNavigate('login')} className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-lg font-semibold">
     Login
@@ -277,13 +438,13 @@ const HomePage = ({ onNavigate }) => {
 
     {/* How it works */}
     <div className="mb-16">
-    <h2 className="text-3xl font-bold text-center text-slate-800 mb-10">Cara Kerja</h2>
+    <h2 className="text-3xl font-bold text-center text-slate-800 mb-10">How it works?</h2>
     <div className="grid md:grid-cols-4 gap-6">
     {[
-      { icon: User, title: 'Buat Akun', desc: 'Daftar dengan username & password' },
-      { icon: FileText, title: 'Buat Catatan', desc: 'Tulis markdown dengan checklist' },
-      { icon: Check, title: 'Auto Reset', desc: 'Checklist harian reset otomatis' },
-      { icon: BarChart2, title: 'Lihat Log', desc: 'Track progres aktivitas Anda' }
+      { icon: User, title: 'Create Account', desc: 'Make an account with a username and password. We planned to add Google Login, but our intern rage-quit.' },
+      { icon: FileText, title: 'Create notes', desc: 'Write markdown notes with checklists, pretending you’re way more organized than you actually are.' },
+      { icon: Check, title: 'Auto Reset', desc: 'Daily checklists reset automatically, unlike your sleep schedule.' },
+      { icon: BarChart2, title: 'View Logs', desc: 'Track your progress. Or stare at the graph wondering where your motivation went.' }
     ].map((step, i) => (
       <div key={i} className="bg-white p-6 rounded-xl shadow-md text-center hover:shadow-lg transition">
       <div className="flex justify-center mb-4">
@@ -300,12 +461,12 @@ const HomePage = ({ onNavigate }) => {
 
     {/* Sample boards */}
     <div>
-    <h2 className="text-3xl font-bold text-center text-slate-800 mb-10">Contoh Board</h2>
+    <h2 className="text-3xl font-bold text-center text-slate-800 mb-10">Board Sample</h2>
     <div className="grid md:grid-cols-3 gap-6">
     {[
-      { title: 'Daily Tasks', desc: 'Checklist harian untuk produktivitas', type: 'daily' },
-      { title: 'Weekly Plan', desc: 'Rencana mingguan dan goals', type: 'weekly' },
-      { title: 'Learning Notes', desc: 'Catatan belajar dengan markdown', type: 'custom' }
+      { title: 'Daily Tasks', desc: 'Coming soon… once we figure out how to stop the layout from exploding.', type: 'daily' },
+      { title: 'Weekly Plan', desc: 'Coming soon… probably. Depends on caffeine availability.', type: 'weekly' },
+      { title: 'Learning Notes', desc: 'Coming soon… because learning is hard and so is frontend.', type: 'custom' }
     ].map((board, i) => (
       <div key={i} className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition">
       <div className="flex items-center justify-between mb-3">
@@ -326,7 +487,8 @@ const HomePage = ({ onNavigate }) => {
     {/* Footer */}
     <footer className="bg-slate-800 text-white py-8 mt-16">
     <div className="max-w-6xl mx-auto px-4 text-center">
-    <p className="text-sm">© 2025 MarkDash. Built with React + Vite</p>
+    <p className="text-sm">MarkDash. Built with React, Vite, and Deno</p>
+    <p className="text-sm">Created by <a href="https://frugaldev.biz.id"><u>FrugalDev</u></a> — inspired by Notion, but built for devices with trust issues and 2GB RAM.</p>
     </div>
     </footer>
     </div>
@@ -349,10 +511,10 @@ const LoginPage = ({ onNavigate, onLogin }) => {
       if (result.success) {
         onLogin(result.data.user);
       } else {
-        setError('Login gagal. Periksa username dan password Anda.');
+        setError('Login failed. Check your username and password — and if that fails, blame the keyboard.');
       }
     } catch (err) {
-      setError('Terjadi kesalahan. Pastikan backend sudah berjalan.');
+      setError('Something went wrong. Probably not your fault. Probably.');
     } finally {
       setLoading(false);
     }
@@ -363,8 +525,8 @@ const LoginPage = ({ onNavigate, onLogin }) => {
     <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full">
     <div className="text-center mb-8">
     <FileText className="w-12 h-12 text-blue-500 mx-auto mb-3" />
-    <h2 className="text-2xl font-bold text-slate-800">Login ke MarkDash</h2>
-    <p className="text-slate-600 mt-2">Masuk untuk mengelola dashboard Anda</p>
+    <h2 className="text-2xl font-bold text-slate-800">Login to MarkDash</h2>
+    <p className="text-slate-600 mt-2">Sign in to manage your dashboard, assuming the backend woke up today.</p>
     </div>
 
     {error && (
@@ -409,19 +571,19 @@ const LoginPage = ({ onNavigate, onLogin }) => {
     disabled={loading}
     className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50"
     >
-    {loading ? 'Loading...' : 'Login'}
+    {loading ? 'Loading.. (we hope it works)' : 'Login'}
     </button>
     </form>
 
     <div className="mt-6 text-center">
     <button onClick={() => onNavigate('register')} className="text-blue-600 hover:text-blue-700 text-sm font-semibold">
-    Belum punya akun? Daftar di sini
+    No account yet? Create one and immediately regret your password choices.
     </button>
     </div>
 
     <div className="mt-4 text-center">
     <button onClick={() => onNavigate('home')} className="text-slate-600 hover:text-slate-800 text-sm">
-    ← Kembali ke Home
+    ← Return to Home — where things are slightly less stressful.
     </button>
     </div>
     </div>
@@ -442,7 +604,7 @@ const RegisterPage = ({ onNavigate }) => {
     setError('');
 
     if (password !== confirmPassword) {
-      setError('Password tidak cocok');
+      setError('Missmatch password, try again');
       return;
     }
 
@@ -454,10 +616,10 @@ const RegisterPage = ({ onNavigate }) => {
         setSuccess(true);
         setTimeout(() => onNavigate('login'), 2000);
       } else {
-        setError('Registrasi gagal. Username mungkin sudah digunakan.');
+        setError('Registration failed. Maybe someone else already take it');
       }
     } catch (err) {
-      setError('Terjadi kesalahan. Pastikan backend sudah berjalan.');
+      setError('Registration failed. Either the server panicked or you typed something cursed.');
     } finally {
       setLoading(false);
     }
@@ -468,8 +630,8 @@ const RegisterPage = ({ onNavigate }) => {
     <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full">
     <div className="text-center mb-8">
     <FileText className="w-12 h-12 text-blue-500 mx-auto mb-3" />
-    <h2 className="text-2xl font-bold text-slate-800">Daftar MarkDash</h2>
-    <p className="text-slate-600 mt-2">Buat akun untuk memulai</p>
+    <h2 className="text-2xl font-bold text-slate-800">Register for MarkDash</h2>
+    <p className="text-slate-600 mt-2">Start your journey toward productivity… or at least pretending.</p>
     </div>
 
     {error && (
@@ -480,13 +642,13 @@ const RegisterPage = ({ onNavigate }) => {
 
     {success && (
       <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 text-sm">
-      Registrasi berhasil! Mengalihkan ke login...
+      Registration successful! Redirecting to login universe
       </div>
     )}
 
     <form onSubmit={handleSubmit} className="space-y-4">
     <div>
-    <label className="block text-sm font-semibold text-slate-700 mb-2">Username</label>
+    <label className="block text-sm font-semibold text-slate-700 mb-2">Username — preferably something you won’t forget in 3 minutes.</label>
     <div className="relative">
     <User className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
     <input
@@ -501,7 +663,7 @@ const RegisterPage = ({ onNavigate }) => {
     </div>
 
     <div>
-    <label className="block text-sm font-semibold text-slate-700 mb-2">Password</label>
+    <label className="block text-sm font-semibold text-slate-700 mb-2">Password — stronger than your last New Year’s resolution.</label>
     <div className="relative">
     <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
     <input
@@ -516,7 +678,7 @@ const RegisterPage = ({ onNavigate }) => {
     </div>
 
     <div>
-    <label className="block text-sm font-semibold text-slate-700 mb-2">Konfirmasi Password</label>
+    <label className="block text-sm font-semibold text-slate-700 mb-2">Confirm Password — because humans are known to misclick everything.</label>
     <div className="relative">
     <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
     <input
@@ -541,13 +703,13 @@ const RegisterPage = ({ onNavigate }) => {
 
     <div className="mt-6 text-center">
     <button onClick={() => onNavigate('login')} className="text-blue-600 hover:text-blue-700 text-sm font-semibold">
-    Sudah punya akun? Login di sini
+    Already have an account? Log in — we believe in you.
     </button>
     </div>
 
     <div className="mt-4 text-center">
     <button onClick={() => onNavigate('home')} className="text-slate-600 hover:text-slate-800 text-sm">
-    ← Kembali ke Home
+    ← Retreat to Home before something else breaks.
     </button>
     </div>
     </div>
@@ -582,7 +744,7 @@ const DashboardPage = ({ darkMode }) => {
   };
 
   const handleDelete = async (id) => {
-    if (confirm('Yakin ingin menghapus board ini?')) {
+    if (confirm('Are you sure?')) {
       await api.deleteBoard(id);
       loadBoards();
     }
@@ -628,8 +790,8 @@ const DashboardPage = ({ darkMode }) => {
   }
 
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className={`min-h-screen ${darkMode ? 'bg-slate-900' : 'bg-slate-50'} flex flex-col`}>
+    <div className="flex-1 max-w-7xl mx-auto px-4 py-8 w-full">
     <div className="flex justify-between items-center mb-8">
     <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>Dashboard</h1>
     <button
@@ -649,12 +811,12 @@ const DashboardPage = ({ darkMode }) => {
     ) : boards.length === 0 ? (
       <div className={`text-center py-12 ${darkMode ? 'bg-slate-800' : 'bg-white'} rounded-xl shadow-md`}>
       <FileText className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-      <p className={`${darkMode ? 'text-gray-300' : 'text-slate-600'} mb-4`}>Belum ada board. Buat yang pertama!</p>
+      <p className={`${darkMode ? 'text-gray-300' : 'text-slate-600'} mb-4`}>404 Not Found, Just kidding... try create board or something...</p>
       <button
       onClick={() => setShowEditor(true)}
       className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
       >
-      Buat Board
+      Create Board
       </button>
       </div>
     ) : (
@@ -708,6 +870,8 @@ const DashboardPage = ({ darkMode }) => {
       </div>
     )}
     </div>
+
+    <Footer darkMode={darkMode} />
     </div>
   );
 };
@@ -752,7 +916,7 @@ const EditorPage = ({ board, onBack, onSave, darkMode }) => {
     <div className={`${darkMode ? 'bg-slate-800' : 'bg-white'} rounded-xl shadow-lg p-6`}>
     <div className="space-y-6">
     <div>
-    <label className={`block text-sm font-semibold ${darkMode ? 'text-gray-200' : 'text-slate-700'} mb-2`}>Judul Board</label>
+    <label className={`block text-sm font-semibold ${darkMode ? 'text-gray-200' : 'text-slate-700'} mb-2`}>Title</label>
     <input
     type="text"
     value={title}
@@ -805,7 +969,7 @@ const EditorPage = ({ board, onBack, onSave, darkMode }) => {
     </label>
     <div className="mb-4 text-sm text-gray-500">
     <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
-    ✨ Tips: Gunakan toolbar untuk formatting, support LaTeX dengan <code className="bg-gray-700 px-1 py-0.5 rounded">$...$</code> inline atau <code className="bg-gray-700 px-1 py-0.5 rounded">$...$</code> block
+    ✨ Tip: Use toolbar for formatting, support LaTeX with $...$ inline or $...$ or maybe still not fully work..
     </p>
     </div>
 
@@ -845,6 +1009,72 @@ const EditorPage = ({ board, onBack, onSave, darkMode }) => {
 const BoardViewPage = ({ board, onBack, onRefresh, darkMode }) => {
   const [markdown, setMarkdown] = useState(board.markdown);
   const [checkedItems, setCheckedItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadBoardState();
+  }, []);
+
+  const loadBoardState = async () => {
+    setLoading(true);
+    try {
+      // Get logs to restore checkbox state
+      const result = await api.getBoardLogs(board.id);
+
+      if (result.success && result.data && result.data.length > 0) {
+        // Build checkbox state from logs
+        const checkboxStates = {};
+
+        // Process all actions chronologically
+        result.data.forEach(log => {
+          log.actions.forEach(action => {
+            if (action.type === 'reset') {
+              // Reset all checkboxes
+              Object.keys(checkboxStates).forEach(key => {
+                checkboxStates[key] = false;
+              });
+            } else if (action.type === 'check') {
+              checkboxStates[action.task] = true;
+            } else if (action.type === 'uncheck') {
+              checkboxStates[action.task] = false;
+            }
+          });
+        });
+
+        // Apply checkbox states to markdown
+        let updatedMarkdown = board.markdown;
+        const lines = updatedMarkdown.split('\n');
+
+        lines.forEach((line, index) => {
+          if (line.match(/- \[(x| )\]/)) {
+            const taskMatch = line.match(/- \[(x| )\] (.*)/);
+            if (taskMatch) {
+              const taskName = taskMatch[2];
+              const shouldBeChecked = checkboxStates[taskName] === true;
+              const isCurrentlyChecked = line.includes('[x]');
+
+              // Update if state differs
+              if (shouldBeChecked && !isCurrentlyChecked) {
+                lines[index] = line.replace('[ ]', '[x]');
+              } else if (!shouldBeChecked && isCurrentlyChecked) {
+                lines[index] = line.replace('[x]', '[ ]');
+              }
+            }
+          }
+        });
+
+        setMarkdown(lines.join('\n'));
+      } else {
+        // No logs, use original markdown
+        setMarkdown(board.markdown);
+      }
+    } catch (err) {
+      console.error('Failed to load board state:', err);
+      setMarkdown(board.markdown);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const matches = markdown.match(/- \[(x| )\] (.*)/gi) || [];
@@ -862,6 +1092,7 @@ const BoardViewPage = ({ board, onBack, onRefresh, darkMode }) => {
       const taskMatch = lines[lineIndex].match(/- \[(x| )\] (.*)/);
       const taskName = taskMatch ? taskMatch[2] : 'task';
 
+      // Log action to backend
       await api.createLog(board.id, [{
         type: isChecked ? 'uncheck' : 'check',
         task: taskName,
@@ -1040,6 +1271,17 @@ const BoardViewPage = ({ board, onBack, onRefresh, darkMode }) => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className={`min-h-screen ${darkMode ? 'bg-slate-900' : 'bg-slate-50'} flex items-center justify-center`}>
+      <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+      <p className={darkMode ? 'text-gray-400' : 'text-slate-600'}>Loading board state...</p>
+      </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -1061,7 +1303,7 @@ const BoardViewPage = ({ board, onBack, onRefresh, darkMode }) => {
     </div>
 
     <div className={`${darkMode ? 'bg-slate-800' : 'bg-white'} rounded-xl shadow-lg p-8 mb-6`}>
-    {/* Render semua konten dengan urutan yang benar */}
+    
     {renderMarkdownWithInteractiveCheckboxes()}
     </div>
 
